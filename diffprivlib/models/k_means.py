@@ -21,14 +21,14 @@ K-means clustering algorithm satisfying differential privacy.
 import warnings
 
 import numpy as np
-from sklearn import cluster as skcluster
+import sklearn.cluster as sk_cluster
 
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
 from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
-class KMeans(skcluster.KMeans):
+class KMeans(sk_cluster.KMeans):
     r"""K-Means clustering with differential privacy.
 
     Implements the DPLloyd approach presented in [SCL16]_, leveraging the :class:`sklearn.cluster.KMeans` class for full
@@ -86,6 +86,7 @@ class KMeans(skcluster.KMeans):
         self.labels_ = None
         self.inertia_ = None
         self.n_iter_ = None
+        self._n_threads = 1
 
     def fit(self, X, y=None, sample_weight=None):
         """Computes k-means clustering with differential privacy.
@@ -98,9 +99,8 @@ class KMeans(skcluster.KMeans):
         y : Ignored
             not used, present here for API consistency by convention.
 
-        sample_weight : Ignored
-            Not used in diffprivlib, present here for consistency with :obj:`sklearn.cluster.KMeans`. Specifying this
-            parameter will result in a :class:`.DiffprivlibCompatibilityWarning`.
+        sample_weight : ignored
+            Ignored by diffprivlib. Present for consistency with sklearn API.
 
         Returns
         -------
@@ -223,8 +223,7 @@ class KMeans(skcluster.KMeans):
             noisy_count = geometric_mech.randomise(cluster_count)
 
             cluster_sum = np.sum(X[labels == cluster], axis=0)
-            # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
-            noisy_sum = np.array(np.zeros_like(cluster_sum))
+            noisy_sum = np.zeros_like(cluster_sum)
 
             for i in range(dims):
                 laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0]) \
